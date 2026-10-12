@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"os/exec"
+	"time"
 )
 
 type request struct {
@@ -31,13 +33,20 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("python", "-c", req.Code)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "python", "-c", req.Code)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	cmd.Run() // exit code is handled in step 1.6
 
-	res := result{Stdout: stdout.String(), Stderr: stderr.String()}
+	res := result{
+		Stdout:   stdout.String(),
+		Stderr:   stderr.String(),
+		TimedOut: ctx.Err() == context.DeadlineExceeded,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
