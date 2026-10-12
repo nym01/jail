@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
+	"os/exec"
 )
 
 type request struct {
@@ -29,7 +31,13 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := result{Stdout: req.Code}
+	cmd := exec.Command("python", "-c", req.Code)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	cmd.Run() // exit code is handled in step 1.6
+
+	res := result{Stdout: stdout.String(), Stderr: stderr.String()}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
