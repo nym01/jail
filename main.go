@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os/exec"
 	"time"
@@ -57,12 +58,20 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	var stdout, stderr cappedWriter
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	cmd.Run() // exit code is handled in step 1.6
+	err = cmd.Run()
 
 	res := result{
 		Stdout:   stdout.buf.String(),
 		Stderr:   stderr.buf.String(),
 		TimedOut: ctx.Err() == context.DeadlineExceeded,
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		res.ExitCode = exitErr.ExitCode()
+	} else if err != nil {
+		res.Stderr = err.Error()
+		res.ExitCode = -1
 	}
 
 	w.Header().Set("Content-Type", "application/json")
