@@ -51,6 +51,8 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	Run(req.Code) // temporary, removed in step 4.7
+
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
