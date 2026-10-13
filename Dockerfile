@@ -21,6 +21,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /rootfs/usr/bin /rootfs/proc /rootfs/dev /rootfs/tmp \
+    && cp -a /usr/bin/python3* /rootfs/usr/bin/ \
+    && cp -a /usr/lib /usr/lib64 /rootfs/usr/ \
+    && ln -s usr/lib /rootfs/lib \
+    && ln -s usr/lib64 /rootfs/lib64
+
 COPY --from=builder /src/jail /usr/local/bin/jail
 COPY --from=builder /gvisor/runsc /usr/local/bin/runsc
 COPY --from=builder /gvisor/gvisor-bin /usr/local/bin/gvisor-bin
